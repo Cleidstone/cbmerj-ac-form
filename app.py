@@ -144,17 +144,22 @@ def submit():
 
 @app.route('/download/<int:sub_id>')
 def download_report(sub_id):
-    sub = get_submission(sub_id)
-    if not sub:
-        return 'Submissão não encontrada.', 404
-    excel = generate_unit_report(sub)
-    safe_name = sub['obm_code'].replace('/', '_').replace(' ', '_')
-    return send_file(
-        io.BytesIO(excel),
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=f'Memoria_Calculo_{safe_name}.xlsx'
-    )
+    import traceback
+    try:
+        sub = get_submission(sub_id)
+        if not sub:
+            return 'Submissão não encontrada.', 404
+        excel = generate_unit_report(sub)
+        safe_name = sub['obm_code'].replace('/', '_').replace(' ', '_')
+        return send_file(
+            io.BytesIO(excel),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'Memoria_Calculo_{safe_name}.xlsx'
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return render_template('error.html', error=str(e)), 500
 
 
 # ── Admin ──────────────────────────────────────────────────────────────────
@@ -192,17 +197,22 @@ def admin_dashboard():
 @app.route('/admin/download/<int:sub_id>')
 @admin_required
 def admin_download(sub_id):
-    sub = get_submission(sub_id)
-    if not sub:
-        return 'Não encontrado.', 404
-    excel = generate_unit_report(sub)
-    safe_name = sub['obm_code'].replace('/', '_').replace(' ', '_')
-    return send_file(
-        io.BytesIO(excel),
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=f'Memoria_Calculo_{safe_name}.xlsx'
-    )
+    import traceback
+    try:
+        sub = get_submission(sub_id)
+        if not sub:
+            return 'Não encontrado.', 404
+        excel = generate_unit_report(sub)
+        safe_name = sub['obm_code'].replace('/', '_').replace(' ', '_')
+        return send_file(
+            io.BytesIO(excel),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'Memoria_Calculo_{safe_name}.xlsx'
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return render_template('error.html', error=str(e)), 500
 
 
 @app.route('/admin/consolidated')

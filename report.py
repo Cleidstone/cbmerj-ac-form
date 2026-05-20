@@ -41,14 +41,15 @@ def _set_col_width(ws, col, width):
 
 
 def _merge_write(ws, row, col_start, col_end, value, font=None, fill=None,
-                 align=None, border=None):
+                 align=None, border=None, number_format=None):
     ws.merge_cells(start_row=row, start_column=col_start,
                    end_row=row, end_column=col_end)
     cell = ws.cell(row=row, column=col_start, value=value)
-    if font:   cell.font = font
-    if fill:   cell.fill = fill
-    if align:  cell.alignment = align
-    if border: cell.border = border
+    if font:          cell.font = font
+    if fill:          cell.fill = fill
+    if align:         cell.alignment = align
+    if border:        cell.border = border
+    if number_format: cell.number_format = number_format
     return cell
 
 
@@ -465,11 +466,22 @@ def generate_consolidated_report(submissions):
     row += 1
 
     totals = Counter()
+    custom_rows = []   # lista de (obm_name, room_name, btu_calc, sel_size, sel_qty, justification)
+
     for idx, sub in enumerate(submissions, start=1):
         rooms = json.loads(sub['rooms_json'])
         size_counts = Counter()
         for r in rooms:
             size_counts[r['selected_size']] += r['selected_qty']
+            if r['selected_size'] not in [12000, 18000, 36000, 60000]:
+                custom_rows.append((
+                    sub['obm_name'],
+                    r['name'],
+                    r.get('btu_calculated', 0),
+                    r['selected_size'],
+                    r['selected_qty'],
+                    r.get('justification', ''),
+                ))
 
         others = sum(qt for sz, qt in size_counts.items()
                      if sz not in [12000, 18000, 36000, 60000])
@@ -498,6 +510,50 @@ def generate_consolidated_report(submissions):
                font=_font(bold=True), fill=_fill(COR_AZUL_CLARO),
                align=_align('center'), border=BORDA_THIN)
     _write(ws, row, 8, '', font=_font(), fill=_fill(COR_AZUL_CLARO), border=BORDA_THIN)
+
+    # ── Aba de equipamentos não padronizados ──────────────────────────────
+    ws2 = wb.create_sheet('Equipamentos Não Padronizados')
+    for c, w in enumerate([6, 35, 30, 18, 18, 10, 50], start=1):
+        _set_col_width(ws2, c, w)
+
+    _merge_write(ws2, 1, 1, 7,
+                 'CBMERJ – EQUIPAMENTOS FORA DO PADRÃO BM4 (12k / 18k / 36k / 60k BTU/h)',
+                 font=_font(bold=True, size=12, color=BRANCO),
+                 fill=_fill(COR_AZUL_ESCURO), align=_align('center'))
+    _merge_write(ws2, 2, 1, 7,
+                 f'Gerado em: {datetime.now().strftime("%d/%m/%Y %H:%M")}',
+                 font=_font(italic=True, size=9, color=BRANCO),
+                 fill=_fill(COR_AZUL_MEDIO), align=_align('center'))
+    ws2.row_dimensions[1].height = 22
+
+    hrow = 4
+    h2_headers = ['#', 'Unidade (OBM)', 'Ambiente', 'BTU Calculado',
+                  'BTU Solicitado', 'Qtd.', 'Justificativa']
+    for c, h in enumerate(h2_headers, start=1):
+        _write(ws2, hrow, c, h, font=_font(bold=True, color=BRANCO),
+               fill=_fill(COR_AZUL_MEDIO), align=_align('center'),
+               border=BORDA_THIN)
+    hrow += 1
+
+    if custom_rows:
+        for i, (obm, room_name, btu_calc, sel_size, sel_qty, just) in enumerate(custom_rows, start=1):
+            fill_r = _fill(COR_LARANJA) if i % 2 != 0 else _fill(COR_AMARELO)
+            row_vals = [i, obm, room_name,
+                        f'{round(btu_calc):,} BTU/h'.replace(',', '.'),
+                        f'{sel_size:,} BTU/h'.replace(',', '.'),
+                        sel_qty,
+                        just or '(sem justificativa)']
+            aligns = ['center', 'left', 'left', 'center', 'center', 'center', 'left']
+            for c, (v, al) in enumerate(zip(row_vals, aligns), start=1):
+                _write(ws2, hrow, c, v, font=_font(), fill=fill_r,
+                       align=_align(al, wrap=(c == 7)), border=BORDA_THIN)
+            ws2.row_dimensions[hrow].height = 30 if just else 15
+            hrow += 1
+    else:
+        _merge_write(ws2, hrow, 1, 7,
+                     'Nenhuma unidade solicitou equipamento fora do padrão BM4.',
+                     font=_font(italic=True), fill=_fill(COR_CINZA),
+                     align=_align('center'), border=BORDA_THIN)
 
     buf = io.BytesIO()
     wb.save(buf)
