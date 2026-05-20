@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Erro – CBMERJ{% endblock %}
+{% block content %}
+<div class="card card-center">
+  <div class="status-icon status-warn">⚠</div>
+  <h2 class="card-title">Ocorreu um erro ao processar o envio</h2>
+  <p class="card-desc">
+    O servidor encontrou um problema ao registrar seu levantamento.
+    Por favor, tente novamente. Se o erro persistir, entre em contato com a BM4.
+  </p>
+  {% if error %}
+  <div class="alert alert-danger" style="text-align:left; font-family:monospace; font-size:0.85rem; word-break:break-word;">
+    Detalhe técnico: {{ error }}
+  </div>
+  {% endif %}
+  <a href="/" class="btn btn-primary" style="margin-top:1.5rem">← Voltar e tentar novamente</a>
+</div>
+{% endblock %}

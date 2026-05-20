@@ -137,6 +137,9 @@ function calcRoom(card) {
   const equipDiv = card.querySelector('.equip-select');
   equipDiv.style.display = 'block';
 
+  // Guardar recomendação no card para uso no onSizeChange
+  card.dataset.recSize = recSize;
+
   // Pré-selecionar tamanho recomendado
   const sizeSelect = card.querySelector(`[name="room_${idx}_selected_size"]`);
   if (!sizeSelect._userChanged) sizeSelect.value = String(recSize);
@@ -157,20 +160,21 @@ function formatBTU(v) {
 // ── Mudança no select de tamanho ──────────────────────────────────────────
 function onSizeChange(select) {
   select._userChanged = true;
-  const card = select.closest('.room-card');
+  const card    = select.closest('.room-card');
+  const idx     = card.dataset.roomIndex;
   const isCustom = select.value === 'custom';
-  card.querySelector('.custom-size-row').style.display   = isCustom ? 'block' : 'none';
-  card.querySelector('.justificativa-row').style.display = isCustom ? 'block' : 'none';
 
+  card.querySelector('.custom-size-row').style.display = isCustom ? 'block' : 'none';
+
+  // Mostrar justificativa se: (a) custom, ou (b) tamanho diferente do recomendado
+  let needJust = isCustom;
   if (!isCustom) {
-    const recVal = card.querySelector('.rec-value').textContent;
-    const selBTU = parseInt(select.value);
-    const recBTU = STANDARD_SIZES.find(s =>
-      recVal.includes(SIZE_LABELS[s]?.replace('BTU/h', '').trim())
-    );
-    const isDiff = recBTU && selBTU !== recBTU;
-    card.querySelector('.justificativa-row').style.display = isDiff ? 'block' : 'none';
+    const recQtyEl = card.querySelector(`[name="room_${idx}_selected_qty"]`);
+    const recSizeStored = parseInt(card.dataset.recSize || '0');
+    const selSize = parseInt(select.value);
+    needJust = recSizeStored > 0 && selSize !== recSizeStored;
   }
+  card.querySelector('.justificativa-row').style.display = needJust ? 'block' : 'none';
 }
 
 // ── Validação antes do envio ──────────────────────────────────────────────
@@ -180,36 +184,54 @@ document.getElementById('main-form')?.addEventListener('submit', function (e) {
     e.preventDefault(); alert('Adicione pelo menos um ambiente.'); return;
   }
 
+  const errors = [];
   let ok = true;
-  cards.forEach(card => {
+
+  cards.forEach((card, ci) => {
     const idx  = card.dataset.roomIndex;
     const name = card.querySelector(`[name="room_${idx}_name"]`)?.value.trim();
-    const len  = parseFloat(card.querySelector(`[name="room_${idx}_length"]`)?.value);
-    const wid  = parseFloat(card.querySelector(`[name="room_${idx}_width"]`)?.value);
+    const len  = parseFloat(card.querySelector(`[name="room_${idx}_length"]`)?.value || '0');
+    const wid  = parseFloat(card.querySelector(`[name="room_${idx}_width"]`)?.value || '0');
     const size = card.querySelector(`[name="room_${idx}_selected_size"]`)?.value;
+
+    if (!name) { errors.push(`Ambiente ${ci + 1}: informe o nome/descrição.`); ok = false; }
+    if (!len || len <= 0) { errors.push(`Ambiente ${ci + 1}: informe o comprimento.`); ok = false; }
+    if (!wid || wid <= 0) { errors.push(`Ambiente ${ci + 1}: informe a largura.`); ok = false; }
+
     const jrow = card.querySelector('.justificativa-row');
-    const just = card.querySelector(`[name="room_${idx}_justification"]`)?.value.trim();
+    if (jrow && jrow.style.display !== 'none') {
+      const just = card.querySelector(`[name="room_${idx}_justification"]`)?.value.trim();
+      if (!just) {
+        errors.push(`Ambiente ${ci + 1}: informe a justificativa para o equipamento fora do padrão BM4.`);
+        ok = false;
+      }
+    }
 
-    if (!name || !len || !wid) { ok = false; }
-    if (jrow?.style.display !== 'none' && !just) { ok = false; }
-
-    // Se custom, transferir valor numérico para hidden
+    // Se custom, copiar valor para campo hidden com o nome correto
     if (size === 'custom') {
-      const customVal = card.querySelector(`[name="room_${idx}_custom_size"]`)?.value;
-      if (!customVal) { ok = false; }
-      else {
-        const hidden = document.createElement('input');
-        hidden.type  = 'hidden';
-        hidden.name  = `room_${idx}_selected_size`;
-        hidden.value = customVal;
-        card.querySelector(`[name="room_${idx}_selected_size"]`).name = `_room_${idx}_selected_size_old`;
-        card.appendChild(hidden);
+      const customVal = card.querySelector(`[name="room_${idx}_custom_size"]`)?.value.trim();
+      if (!customVal || isNaN(parseInt(customVal))) {
+        errors.push(`Ambiente ${ci + 1}: informe a capacidade personalizada em BTU/h.`);
+        ok = false;
+      } else {
+        // Criar input hidden com o nome correto e desativar o select original
+        const existingHidden = card.querySelector(`input[data-custom-size="1"]`);
+        if (!existingHidden) {
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = `room_${idx}_selected_size`;
+          hidden.value = parseInt(customVal);
+          hidden.dataset.customSize = '1';
+          card.appendChild(hidden);
+        }
+        // Desabilitar o select para não duplicar o campo no POST
+        card.querySelector(`[name="room_${idx}_selected_size"]`).disabled = true;
       }
     }
   });
 
   if (!ok) {
     e.preventDefault();
-    alert('Preencha todos os campos obrigatórios e justifique os equipamentos fora do padrão BM4.');
+    alert('Corrija os seguintes problemas antes de enviar:\n\n' + errors.join('\n'));
   }
 });

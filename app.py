@@ -46,77 +46,100 @@ def check_unit():
 
 @app.route('/submit', methods=['POST'])
 def submit():
-    obm_code = request.form.get('obm_code', '').strip()
-    obm_name = OBM_DICT.get(obm_code, request.form.get('obm_name', ''))
+    import traceback
+    try:
+        obm_code = request.form.get('obm_code', '').strip()
+        obm_name = OBM_DICT.get(obm_code, request.form.get('obm_name', obm_code))
 
-    if has_submitted(obm_code):
-        return render_template('already_submitted.html', obm_name=obm_name)
+        if not obm_code:
+            flash('Selecione sua unidade antes de enviar.')
+            return redirect(url_for('index'))
 
-    # Montar lista de ambientes
-    rooms = []
-    room_count = int(request.form.get('room_count', 0))
+        if has_submitted(obm_code):
+            return render_template('already_submitted.html', obm_name=obm_name)
 
-    for i in range(room_count):
-        name = request.form.get(f'room_{i}_name', '').strip()
-        if not name:
-            continue
+        # Montar lista de ambientes
+        rooms = []
+        room_count = int(request.form.get('room_count', 0) or 0)
 
-        length  = float(request.form.get(f'room_{i}_length', 0) or 0)
-        width   = float(request.form.get(f'room_{i}_width', 0) or 0)
-        height  = float(request.form.get(f'room_{i}_height', 2.80) or 2.80)
-        area    = round(length * width, 2)
-        people  = int(request.form.get(f'room_{i}_people', 0) or 0)
-        appl    = int(request.form.get(f'room_{i}_appliances', 0) or 0)
-        lamps   = int(request.form.get(f'room_{i}_lamps', 0) or 0)
-        win_m   = 1 if request.form.get(f'room_{i}_window_morning') else 0
-        win_a   = 1 if request.form.get(f'room_{i}_window_afternoon') else 0
-        rtype   = request.form.get(f'room_{i}_type', 'standard')
+        for i in range(room_count):
+            name = request.form.get(f'room_{i}_name', '').strip()
+            if not name:
+                continue
 
-        btu = calculate_btu(area, people, appl, lamps, win_m, win_a, rtype)
-        rec_size, rec_qty = recommend_ac(btu)
+            try:
+                length = float(request.form.get(f'room_{i}_length', 0) or 0)
+                width  = float(request.form.get(f'room_{i}_width', 0) or 0)
+                height = float(request.form.get(f'room_{i}_height', 2.80) or 2.80)
+            except (ValueError, TypeError):
+                length, width, height = 0.0, 0.0, 2.80
 
-        sel_size_raw = request.form.get(f'room_{i}_selected_size', '')
-        sel_size = int(sel_size_raw) if sel_size_raw.isdigit() else rec_size
-        sel_qty  = int(request.form.get(f'room_{i}_selected_qty', rec_qty) or rec_qty)
-        justification = request.form.get(f'room_{i}_justification', '').strip()
+            area   = round(length * width, 2)
+            people = int(request.form.get(f'room_{i}_people', 0) or 0)
+            appl   = int(request.form.get(f'room_{i}_appliances', 0) or 0)
+            lamps  = int(request.form.get(f'room_{i}_lamps', 0) or 0)
+            win_m  = 1 if request.form.get(f'room_{i}_window_morning') else 0
+            win_a  = 1 if request.form.get(f'room_{i}_window_afternoon') else 0
+            rtype  = request.form.get(f'room_{i}_type', 'standard')
 
-        rooms.append({
-            'name': name,
-            'length': length,
-            'width': width,
-            'height': height,
-            'area': area,
-            'people': people,
-            'appliances': appl,
-            'lamps': lamps,
-            'window_morning': win_m,
-            'window_afternoon': win_a,
-            'room_type': rtype,
-            'btu_calculated': btu,
-            'recommended_size': rec_size,
-            'recommended_qty': rec_qty,
-            'selected_size': sel_size,
-            'selected_qty': sel_qty,
-            'justification': justification,
-        })
+            btu = calculate_btu(area, people, appl, lamps, win_m, win_a, rtype)
+            rec_size, rec_qty = recommend_ac(btu)
 
-    if not rooms:
-        flash('Adicione pelo menos um ambiente antes de enviar.')
-        return redirect(url_for('index'))
+            # Tamanho selecionado — aceita numérico direto ou fallback para recomendado
+            sel_size_raw = request.form.get(f'room_{i}_selected_size', '').strip()
+            try:
+                sel_size = int(sel_size_raw) if sel_size_raw and sel_size_raw != 'custom' else rec_size
+            except ValueError:
+                sel_size = rec_size
 
-    data = {
-        'obm_code': obm_code,
-        'obm_name': obm_name,
-        'commander_name': request.form.get('commander_name', '').strip(),
-        'contact_email': request.form.get('contact_email', '').strip(),
-        'contact_phone': request.form.get('contact_phone', '').strip(),
-        'rooms': rooms,
-        'observations': request.form.get('observations', '').strip(),
-    }
+            try:
+                sel_qty = int(request.form.get(f'room_{i}_selected_qty', '') or rec_qty)
+            except (ValueError, TypeError):
+                sel_qty = rec_qty
 
-    sub_id = save_submission(data)
-    return render_template('success.html', sub_id=sub_id, obm_name=obm_name,
-                           rooms=rooms, total=sum(r['selected_qty'] for r in rooms))
+            justification = request.form.get(f'room_{i}_justification', '').strip()
+
+            rooms.append({
+                'name': name,
+                'length': length,
+                'width': width,
+                'height': height,
+                'area': area,
+                'people': people,
+                'appliances': appl,
+                'lamps': lamps,
+                'window_morning': win_m,
+                'window_afternoon': win_a,
+                'room_type': rtype,
+                'btu_calculated': round(btu, 2),
+                'recommended_size': int(rec_size),
+                'recommended_qty': int(rec_qty),
+                'selected_size': int(sel_size),
+                'selected_qty': int(sel_qty),
+                'justification': justification,
+            })
+
+        if not rooms:
+            flash('Adicione pelo menos um ambiente antes de enviar.')
+            return redirect(url_for('index'))
+
+        data = {
+            'obm_code': obm_code,
+            'obm_name': obm_name,
+            'commander_name': request.form.get('commander_name', '').strip(),
+            'contact_email': request.form.get('contact_email', '').strip(),
+            'contact_phone': request.form.get('contact_phone', '').strip(),
+            'rooms': rooms,
+            'observations': request.form.get('observations', '').strip(),
+        }
+
+        sub_id = save_submission(data)
+        return render_template('success.html', sub_id=sub_id, obm_name=obm_name,
+                               rooms=rooms, total=sum(r['selected_qty'] for r in rooms))
+
+    except Exception as e:
+        traceback.print_exc()  # aparece nos logs do Render
+        return render_template('error.html', error=str(e)), 500
 
 
 @app.route('/download/<int:sub_id>')
