@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Envio confirmado – CBMERJ{% endblock %}
+{% block content %}
+<div class="card card-center">
+  <div class="status-icon status-ok">✓</div>
+  <h2 class="card-title">Levantamento enviado com sucesso!</h2>
+  <p class="card-desc">
+    O levantamento da unidade <strong>{{ obm_name }}</strong> foi registrado.
+  </p>
+
+  <div class="summary-box">
+    <div class="summary-item">
+      <span class="summary-label">Ambientes declarados</span>
+      <span class="summary-val">{{ rooms | length }}</span>
+    </div>
+    <div class="summary-item">
+      <span class="summary-label">Total de equipamentos</span>
+      <span class="summary-val">{{ total }}</span>
+    </div>
+  </div>
+
+  <table class="result-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Ambiente</th>
+        <th>BTU/h calc.</th>
+        <th>Equipamento</th>
+        <th>Qtd.</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rooms %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ r.name }}</td>
+        <td>{{ "{:,.0f}".format(r.btu_calculated).replace(",", ".") }}</td>
+        <td>
+          Split {{ "{:,.0f}".format(r.selected_size).replace(",", ".") }} BTU/h
+          {% if r.selected_size not in [12000, 18000, 36000, 60000] %}
+            <span class="badge-warn">Fora do padrão</span>
+          {% endif %}
+        </td>
+        <td>{{ r.selected_qty }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top:2rem">
+    <a href="{{ url_for('download_report', sub_id=sub_id) }}" class="btn btn-primary btn-large">
+      ⬇ Baixar Memória de Cálculo (.xlsx)
+    </a>
+    <p class="card-desc" style="margin-top:1rem; font-size:0.9rem;">
+      Anexe este arquivo ao processo no SEI conforme orientação da BM4.
+    </p>
+  </div>
+</div>
+{% endblock %}

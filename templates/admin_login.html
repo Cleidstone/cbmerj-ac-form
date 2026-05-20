@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Acesso Administrativo – CBMERJ{% endblock %}
+{% block content %}
+<div class="card card-center card-narrow">
+  <div class="status-icon status-info">🔒</div>
+  <h2 class="card-title">Painel Administrativo BM4</h2>
+  <p class="card-desc">Acesso restrito à equipe da BM4 – Logística.</p>
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  <form method="POST" action="/admin/login" style="margin-top:1.5rem">
+    <div class="field">
+      <label for="password">Senha de acesso</label>
+      <input type="password" id="password" name="password" autofocus required
+             placeholder="Digite a senha administrativa">
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem">
+      Entrar
+    </button>
+  </form>
+</div>
+{% endblock %}

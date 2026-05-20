@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Formulário já enviado – CBMERJ{% endblock %}
+{% block content %}
+<div class="card card-center">
+  <div class="status-icon status-warn">⚠</div>
+  <h2 class="card-title">Formulário já enviado</h2>
+  <p class="card-desc">
+    A unidade <strong>{{ obm_name }}</strong> já realizou o preenchimento e envio
+    do levantamento de ares condicionados.
+  </p>
+  <p class="card-desc">
+    Caso necessite de correções ou atualizações, entre em contato com a
+    <strong>BM4 – Logística</strong> para que o registro seja liberado para novo preenchimento.
+  </p>
+  <a href="/" class="btn btn-secondary" style="margin-top:1.5rem">← Voltar ao início</a>
+</div>
+{% endblock %}

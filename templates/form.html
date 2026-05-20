@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}Formulário de Levantamento – CBMERJ{% endblock %}
+{% block content %}
+
+<div class="card">
+  <h2 class="card-title">Formulário de Levantamento de Ares Condicionados</h2>
+  <p class="card-desc">
+    Preencha os dados da sua Unidade e de cada ambiente que necessita de ar condicionado.
+    O sistema calculará automaticamente a carga térmica e indicará o equipamento adequado.
+    <strong>Cada unidade poderá enviar o formulário apenas uma vez.</strong>
+  </p>
+
+  <!-- Verificação de unidade -->
+  <div class="section" id="sec-unidade">
+    <h3 class="section-title">1. Identificação da Unidade</h3>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="obm_select">Unidade (OBM) <span class="req">*</span></label>
+        <select id="obm_select" required>
+          <option value="">-- Selecione sua unidade --</option>
+          {% for code, name in obm_list %}
+            <option value="{{ code }}">{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div id="already-submitted-warn" class="alert alert-danger" style="display:none">
+      ⚠ Esta unidade já realizou o envio do formulário. Entre em contato com a BM4 caso precise de correções.
+    </div>
+
+    <div id="unit-form-body" style="display:none">
+      <div class="field-row">
+        <div class="field">
+          <label for="commander_name">Nome do Responsável pelo Preenchimento <span class="req">*</span></label>
+          <input type="text" id="commander_name" name="commander_name" placeholder="Ex: Cap BM João Silva" required>
+        </div>
+      </div>
+      <div class="field-row two-col">
+        <div class="field">
+          <label for="contact_email">E-mail de Contato</label>
+          <input type="email" id="contact_email" name="contact_email" placeholder="exemplo@cbmerj.rj.gov.br">
+        </div>
+        <div class="field">
+          <label for="contact_phone">Telefone de Contato</label>
+          <input type="text" id="contact_phone" name="contact_phone" placeholder="(21) 9xxxx-xxxx">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Premissas -->
+  <div class="section" id="sec-premissas" style="display:none">
+    <h3 class="section-title">2. Confirmação das Premissas do Cálculo</h3>
+    <div class="alert alert-info">
+      O cálculo de carga térmica adota as seguintes premissas estabelecidas pela BM4.
+      Confirme que elas serão atendidas nos ambientes declarados:
+    </div>
+    <label class="check-label">
+      <input type="checkbox" id="prem1" required>
+      Todas as janelas dos ambientes <strong>possuem ou receberão películas de proteção solar</strong>.
+    </label>
+    <label class="check-label">
+      <input type="checkbox" id="prem2" required>
+      As lajes dos ambientes <strong>possuem ou receberão telhado de fibrocimento com inclinação mínima de 9%</strong>.
+    </label>
+    <label class="check-label">
+      <input type="checkbox" id="prem3" required>
+      As trocas de ar ocorrem por meio do abrir e fechar das portas (sem sistema de ventilação forçada dedicado).
+    </label>
+  </div>
+
+  <!-- Formulário principal -->
+  <form id="main-form" method="POST" action="/submit" style="display:none">
+    <input type="hidden" name="obm_code" id="obm_code_hidden">
+    <input type="hidden" name="obm_name" id="obm_name_hidden">
+    <input type="hidden" name="room_count" id="room_count" value="0">
+    <!-- campos de identidade (copiados do step anterior) -->
+    <input type="hidden" name="commander_name" id="commander_name_h">
+    <input type="hidden" name="contact_email"  id="contact_email_h">
+    <input type="hidden" name="contact_phone"  id="contact_phone_h">
+
+    <!-- Ambientes -->
+    <div class="section">
+      <h3 class="section-title">3. Ambientes que Necessitam de Ar Condicionado</h3>
+      <p class="card-desc">
+        Adicione cada ambiente separadamente. Para cada um informe as dimensões e características –
+        <strong>não é necessário calcular BTUs</strong>, o sistema fará isso automaticamente.
+      </p>
+
+      <div id="rooms-container"></div>
+
+      <button type="button" class="btn btn-secondary" id="btn-add-room" onclick="addRoom()">
+        + Adicionar Ambiente
+      </button>
+    </div>
+
+    <!-- Observações -->
+    <div class="section">
+      <h3 class="section-title">4. Observações Gerais</h3>
+      <div class="field">
+        <label for="observations">Informações adicionais relevantes para a BM4 (opcional)</label>
+        <textarea name="observations" id="observations" rows="3"
+          placeholder="Ex: Previsão de ampliação, restrições de instalação, observações sobre a edificação..."></textarea>
+      </div>
+    </div>
+
+    <div class="section submit-section">
+      <div class="alert alert-warning">
+        <strong>Atenção:</strong> Após o envio, sua unidade não poderá preencher novamente sem contato com a BM4.
+        Revise todos os ambientes antes de confirmar.
+      </div>
+      <button type="submit" class="btn btn-primary btn-large" id="btn-submit">
+        Enviar Levantamento
+      </button>
+    </div>
+  </form>
+
+  <!-- Botão avançar (fora do form) -->
+  <div id="btn-avancar-wrap" style="display:none; margin-top:1.5rem;">
+    <button type="button" class="btn btn-primary" id="btn-avancar" onclick="avancar()">
+      Avançar para os Ambientes →
+    </button>
+  </div>
+</div>
+
+<!-- Template de um ambiente (clonado por JS) -->
+<template id="room-template">
+  <div class="room-card" data-room-index="__IDX__">
+    <div class="room-header">
+      <span class="room-title">Ambiente <span class="room-num">__NUM__</span></span>
+      <button type="button" class="btn-remove-room" onclick="removeRoom(this)" title="Remover ambiente">✕</button>
+    </div>
+
+    <div class="field-row">
+      <div class="field field-wide">
+        <label>Nome / Descrição do Ambiente <span class="req">*</span></label>
+        <input type="text" name="room___IDX___name" placeholder="Ex: Sala de Reuniões – 1º Andar" required>
+      </div>
+      <div class="field">
+        <label>Tipo de Ambiente <span class="req">*</span>
+          <span class="tooltip" title="Padrão: salas, escritórios, dormitórios. &#10;Sol da tarde: fachada voltada para o oeste. &#10;Área ampla: refeitórios, auditórios.">ℹ</span>
+        </label>
+        <select name="room___IDX___type" onchange="calcRoom(this.closest('.room-card'))">
+          <option value="standard">Sala de aula / Escritório / Dormitório (padrão)</option>
+          <option value="afternoon_sun">Sala com fachada ao sol da tarde (oeste)</option>
+          <option value="large">Refeitório / Auditório / Área ampla</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-row three-col">
+      <div class="field">
+        <label>Comprimento (m) <span class="req">*</span></label>
+        <input type="number" name="room___IDX___length" step="0.01" min="0.5" placeholder="Ex: 6.00"
+          onchange="calcRoom(this.closest('.room-card'))" required>
+      </div>
+      <div class="field">
+        <label>Largura (m) <span class="req">*</span></label>
+        <input type="number" name="room___IDX___width" step="0.01" min="0.5" placeholder="Ex: 4.50"
+          onchange="calcRoom(this.closest('.room-card'))" required>
+      </div>
+      <div class="field">
+        <label>Pé-direito (m)</label>
+        <input type="number" name="room___IDX___height" step="0.01" min="2.0" value="2.80" placeholder="2.80">
+      </div>
+    </div>
+
+    <div class="field area-display" style="display:none">
+      <span>Área calculada: <strong class="area-value">– m²</strong></span>
+    </div>
+
+    <div class="field-row three-col">
+      <div class="field">
+        <label>Nº máximo de pessoas
+          <span class="tooltip" title="Capacidade máxima de ocupação do ambiente">ℹ</span>
+        </label>
+        <input type="number" name="room___IDX___people" min="0" value="0"
+          onchange="calcRoom(this.closest('.room-card'))">
+      </div>
+      <div class="field">
+        <label>Aparelhos eletrônicos
+          <span class="tooltip" title="Computadores, TVs, projetores, impressoras, roteadores, etc.">ℹ</span>
+        </label>
+        <input type="number" name="room___IDX___appliances" min="0" value="0"
+          onchange="calcRoom(this.closest('.room-card'))">
+      </div>
+      <div class="field">
+        <label>Lâmpadas de 10W
+          <span class="tooltip" title="Quantidade de lâmpadas LED de 10W no ambiente">ℹ</span>
+        </label>
+        <input type="number" name="room___IDX___lamps" min="0" value="0"
+          onchange="calcRoom(this.closest('.room-card'))">
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Orientação das janelas (incidência solar)</label>
+        <div class="check-group">
+          <label class="check-inline">
+            <input type="checkbox" name="room___IDX___window_morning" value="1"
+              onchange="calcRoom(this.closest('.room-card'))">
+            Sol da manhã (leste / nascente)
+          </label>
+          <label class="check-inline">
+            <input type="checkbox" name="room___IDX___window_afternoon" value="1"
+              onchange="calcRoom(this.closest('.room-card'))">
+            Sol da tarde (oeste / poente)
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resultado do cálculo -->
+    <div class="calc-result" style="display:none">
+      <div class="calc-btu">
+        BTU/h calculado: <strong class="btu-value">–</strong>
+      </div>
+      <div class="calc-rec">
+        Equipamento recomendado: <strong class="rec-value">–</strong>
+      </div>
+    </div>
+
+    <!-- Seleção do equipamento -->
+    <div class="equip-select" style="display:none">
+      <div class="field-row two-col">
+        <div class="field">
+          <label>Capacidade selecionada (BTU/h) <span class="req">*</span></label>
+          <select name="room___IDX___selected_size" onchange="onSizeChange(this)">
+            <option value="12000">12.000 BTU/h – Split 12k</option>
+            <option value="18000">18.000 BTU/h – Split 18k</option>
+            <option value="36000">36.000 BTU/h – Split 36k</option>
+            <option value="60000">60.000 BTU/h – Split 60k</option>
+            <option value="custom">Outro (fora do padrão BM4 – requer justificativa)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Quantidade de equipamentos <span class="req">*</span></label>
+          <input type="number" name="room___IDX___selected_qty" min="1" value="1">
+        </div>
+      </div>
+
+      <div class="custom-size-row" style="display:none">
+        <div class="field">
+          <label>Capacidade personalizada (BTU/h)</label>
+          <input type="number" name="room___IDX___custom_size" min="1000" step="1000"
+            placeholder="Ex: 24000">
+        </div>
+      </div>
+
+      <div class="justificativa-row" style="display:none">
+        <div class="field">
+          <label>Justificativa para uso de equipamento fora do padrão BM4 <span class="req">*</span></label>
+          <textarea name="room___IDX___justification" rows="3"
+            placeholder="Descreva a inviabilidade técnica de adequação ao padrão (12k, 18k, 36k ou 60k BTU/h)..." required></textarea>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .room-card -->
+</template>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% endblock %}

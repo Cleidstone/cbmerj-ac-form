@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Painel BM4 – Administração{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="admin-topbar">
+    <h2 class="card-title" style="margin:0">Painel Administrativo – BM4</h2>
+    <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary btn-sm">Sair</a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <span class="stat-num">{{ total_subs }}</span>
+      <span class="stat-label">Unidades responderam</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-num">{{ obm_total }}</span>
+      <span class="stat-label">Total de OBMs</span>
+    </div>
+    <div class="stat-box">
+      <span class="stat-num">{{ obm_total - total_subs }}</span>
+      <span class="stat-label">Pendentes</span>
+    </div>
+  </div>
+
+  <div class="admin-actions">
+    <a href="{{ url_for('admin_consolidated') }}" class="btn btn-primary">
+      ⬇ Baixar Consolidado Geral (.xlsx)
+    </a>
+  </div>
+
+  {% if submissions %}
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Unidade (OBM)</th>
+        <th>Responsável</th>
+        <th>Ambientes</th>
+        <th>Total ACs</th>
+        <th>Enviado em</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sub in submissions %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><strong>{{ sub.obm_name }}</strong></td>
+        <td>{{ sub.commander_name or '–' }}</td>
+        <td class="text-center">{{ sub.room_count }}</td>
+        <td class="text-center">{{ sub.total_units }}</td>
+        <td class="text-nowrap">{{ sub.submitted_at }}</td>
+        <td class="actions-col">
+          <a href="{{ url_for('admin_download', sub_id=sub.id) }}"
+             class="btn btn-secondary btn-sm" title="Baixar Excel">⬇ Excel</a>
+          <form method="POST"
+                action="{{ url_for('admin_delete', obm_code=sub.obm_code) }}"
+                style="display:inline"
+                onsubmit="return confirm('Remover envio de {{ sub.obm_name }}? A unidade poderá preencher novamente.')">
+            <button type="submit" class="btn btn-danger btn-sm">✕ Remover</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="alert alert-info" style="margin-top:1.5rem">
+    Nenhuma unidade enviou o formulário ainda.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

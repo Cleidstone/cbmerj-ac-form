@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CBMERJ – Levantamento de Ares Condicionados{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-logo">🔥</div>
+      <div class="header-text">
+        <span class="header-title">CORPO DE BOMBEIROS MILITAR DO ESTADO DO RIO DE JANEIRO</span>
+        <span class="header-sub">Levantamento de Necessidade de Ares Condicionados – BM4</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for msg in messages %}
+            <div class="flash">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <p>CBMERJ – BM4 Logística | Sistema de Levantamento de Cargas Térmicas</p>
+    <p>Os cálculos seguem a metodologia da planilha oficial BM4 e assumem as premissas de película solar e proteção de cobertura.</p>
+  </footer>
+</body>
+</html>
