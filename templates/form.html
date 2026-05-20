@@ -19,8 +19,12 @@
         <label for="obm_select">Unidade (OBM) <span class="req">*</span></label>
         <select id="obm_select" required>
           <option value="">-- Selecione sua unidade --</option>
-          {% for code, name in obm_list %}
-            <option value="{{ code }}">{{ name }}</option>
+          {% for group_name, items in obm_groups %}
+            <optgroup label="{{ group_name }}">
+              {% for code, name in items %}
+                <option value="{{ code }}">{{ name }}</option>
+              {% endfor %}
+            </optgroup>
           {% endfor %}
         </select>
       </div>

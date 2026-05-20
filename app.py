@@ -8,7 +8,7 @@ from flask import (Flask, render_template, request, redirect, url_for,
 from database import init_db, has_submitted, save_submission, get_all_submissions, get_submission, delete_submission
 from calculator import calculate_btu, recommend_ac, get_emop_codes, STANDARD_SIZES, ROOM_TYPE_FACTORS
 from report import generate_unit_report, generate_consolidated_report
-from obm_list import OBM_LIST
+from obm_list import OBM_LIST, OBM_GROUPS
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'cbmerj-bm4-secret-2025-change-in-prod')
@@ -31,7 +31,7 @@ def admin_required(f):
 @app.route('/')
 def index():
     return render_template('form.html',
-                           obm_list=OBM_LIST,
+                           obm_groups=OBM_GROUPS,
                            room_types=ROOM_TYPE_FACTORS,
                            standard_sizes=STANDARD_SIZES)
 
