@@ -39,7 +39,7 @@ def has_submitted(obm_code):
 
 def save_submission(data):
     conn = get_db()
-    conn.execute(
+    cursor = conn.execute(
         '''INSERT INTO submissions
            (obm_code, obm_name, commander_name, contact_email, contact_phone,
             rooms_json, observations, submitted_at)
@@ -49,7 +49,7 @@ def save_submission(data):
          json.dumps(data['rooms'], ensure_ascii=False),
          data['observations'], datetime.now().strftime('%d/%m/%Y %H:%M:%S'))
     )
-    sub_id = conn.lastrowid
+    sub_id = cursor.lastrowid   # fix: lastrowid é do cursor, não da conexão
     conn.commit()
     conn.close()
     return sub_id

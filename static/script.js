@@ -137,9 +137,6 @@ function calcRoom(card) {
   const equipDiv = card.querySelector('.equip-select');
   equipDiv.style.display = 'block';
 
-  // Guardar recomendação no card para uso no onSizeChange
-  card.dataset.recSize = recSize;
-
   // Pré-selecionar tamanho recomendado
   const sizeSelect = card.querySelector(`[name="room_${idx}_selected_size"]`);
   if (!sizeSelect._userChanged) sizeSelect.value = String(recSize);
@@ -161,20 +158,10 @@ function formatBTU(v) {
 function onSizeChange(select) {
   select._userChanged = true;
   const card    = select.closest('.room-card');
-  const idx     = card.dataset.roomIndex;
   const isCustom = select.value === 'custom';
-
-  card.querySelector('.custom-size-row').style.display = isCustom ? 'block' : 'none';
-
-  // Mostrar justificativa se: (a) custom, ou (b) tamanho diferente do recomendado
-  let needJust = isCustom;
-  if (!isCustom) {
-    const recQtyEl = card.querySelector(`[name="room_${idx}_selected_qty"]`);
-    const recSizeStored = parseInt(card.dataset.recSize || '0');
-    const selSize = parseInt(select.value);
-    needJust = recSizeStored > 0 && selSize !== recSizeStored;
-  }
-  card.querySelector('.justificativa-row').style.display = needJust ? 'block' : 'none';
+  // Justificativa obrigatória SOMENTE se fora do padrão BM4 (12k/18k/36k/60k)
+  card.querySelector('.custom-size-row').style.display   = isCustom ? 'block' : 'none';
+  card.querySelector('.justificativa-row').style.display = isCustom ? 'block' : 'none';
 }
 
 // ── Validação antes do envio ──────────────────────────────────────────────
