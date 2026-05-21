@@ -88,6 +88,104 @@ def _header(ws, title, sub_data):
     return row + 1
 
 
+# ── Bloco de parâmetros técnicos (base normativa) ─────────────────────────
+def _block_parametros_tecnicos(ws, row):
+    """Insere uma vez por documento o bloco de base normativa para auditoria."""
+    COR_NORM_TITULO = '0D3349'   # azul muito escuro
+    COR_NORM_SEC    = '1F5C8B'   # azul médio-escuro
+    COR_NORM_CORPO  = 'EBF3FB'   # azul muito claro
+    COR_NORM_OBS    = 'FFF2CC'   # amarelo claro
+    COR_NORM_MET    = 'F2F2F2'   # cinza claro
+
+    # Cabeçalho do bloco
+    _merge_write(ws, row, 1, 7,
+                 'PARÂMETROS TÉCNICOS ADOTADOS — BASE NORMATIVA',
+                 font=_font(bold=True, size=11, color=BRANCO),
+                 fill=_fill(COR_NORM_TITULO), align=_align('center'),
+                 border=BORDA_THIN)
+    ws.row_dimensions[row].height = 18
+    row += 1
+
+    secoes = [
+        (
+            '1. ABERTURAS ENVIDRAÇADAS (PELÍCULA SOLAR)',
+            [
+                'Coeficiente de Sombreamento adotado: CS = 0,50',
+                'Fator Solar adotado: FS = 0,44',
+                'Referência: NBR 15220-1:2005, Tabela A.1',
+                'Base: vidro simples + película de controle solar de média eficiência',
+            ]
+        ),
+        (
+            '2. COBERTURA',
+            [
+                'Transmitância térmica adotada: U = 1,50 W/m²·K',
+                'Absortância solar adotada: α = 0,60',
+                'Sistema: laje de concreto armado (esp. ≥ 10 cm) com telha de fibrocimento natural e câmara de ar ventilada',
+                'Referência: NBR 15220-1:2005, Tabela C.4 — Zona Bioclimática 8 (NBR 15220-3)',
+            ]
+        ),
+        (
+            '3. RENOVAÇÃO DE AR / INFILTRAÇÃO',
+            [
+                'Taxa de infiltração adotada: 0,5 renovações por hora (rph)',
+                'Regime: infiltração por abertura eventual de portas (sem ventilação forçada)',
+                'Referência: NBR 16401-1:2008, item 5.3 — ambientes de ocupação intermediária',
+            ]
+        ),
+        (
+            '4. TEMPERATURA DE PROJETO',
+            [
+                'Temperatura externa de projeto: 36°C (verão, percentil 1% — Rio de Janeiro)',
+                'Temperatura interna de conforto: 24°C',
+                'Delta T adotado: ΔT = 12°C',
+                'Referência: ASHRAE Handbook of Fundamentals / NBR 16401-1:2008',
+            ]
+        ),
+    ]
+
+    for titulo, linhas in secoes:
+        _merge_write(ws, row, 1, 7, titulo,
+                     font=_font(bold=True, size=9, color=BRANCO),
+                     fill=_fill(COR_NORM_SEC), align=_align('left'),
+                     border=BORDA_THIN)
+        ws.row_dimensions[row].height = 14
+        row += 1
+        for linha in linhas:
+            _merge_write(ws, row, 1, 7, '   ' + linha,
+                         font=_font(size=9), fill=_fill(COR_NORM_CORPO),
+                         align=_align('left', wrap=True), border=BORDA_THIN)
+            ws.row_dimensions[row].height = 13
+            row += 1
+
+    # Observação geral
+    obs = (
+        'OBSERVAÇÃO GERAL: Os parâmetros acima são válidos para os ambientes cujas premissas foram '
+        'confirmadas no preenchimento. Ambientes com divergências declaradas nas Observações serão '
+        'recalculados individualmente pela BM/4.'
+    )
+    _merge_write(ws, row, 1, 7, obs,
+                 font=_font(size=9, italic=True),
+                 fill=_fill(COR_NORM_OBS), align=_align('left', wrap=True),
+                 border=BORDA_THIN)
+    ws.row_dimensions[row].height = 30
+    row += 1
+
+    # Metodologia
+    met = (
+        'Metodologia de cálculo: Método simplificado de carga térmica (CLTD/CLF) adaptado às premissas BM/4. '
+        'Documento gerado automaticamente pelo Sistema de Levantamento de Cargas Térmicas — CBMERJ/BM4.'
+    )
+    _merge_write(ws, row, 1, 7, met,
+                 font=_font(size=8, italic=True, color='555555'),
+                 fill=_fill(COR_NORM_MET), align=_align('left', wrap=True),
+                 border=BORDA_THIN)
+    ws.row_dimensions[row].height = 24
+    row += 1
+
+    return row + 1   # linha em branco de separação
+
+
 # ── Planilha: Memória de Cálculo ───────────────────────────────────────────
 def _sheet_memoria(wb, sub_data, rooms):
     ws = wb.create_sheet('Memória de Cálculo')
@@ -114,6 +212,9 @@ def _sheet_memoria(wb, sub_data, rooms):
         ws.row_dimensions[row].height = 14
         row += 1
     row += 1
+
+    # Bloco de parâmetros técnicos (base normativa) — uma vez por documento
+    row = _block_parametros_tecnicos(ws, row)
 
     for idx, room in enumerate(rooms, start=1):
         # Título do ambiente

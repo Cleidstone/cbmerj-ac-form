@@ -55,5 +55,75 @@
       Anexe este arquivo ao processo no SEI conforme orientação da BM4.
     </p>
   </div>
+
+  <details class="norma-acordeao" style="margin-top:2rem; text-align:left; border:1px solid #c9d8ee; border-radius:6px; background:#f5f9ff;">
+    <summary style="cursor:pointer; padding:0.75rem 1rem; font-weight:600; color:#1B3A6B; font-size:0.92rem; list-style:none; display:flex; align-items:center; gap:0.5rem;">
+      <span class="acordeao-seta" style="font-size:0.8rem;">▶</span>
+      Base normativa dos parâmetros adotados — clique para expandir
+    </summary>
+    <div style="padding:0.75rem 1.25rem 1rem; font-size:0.82rem; color:#333; line-height:1.6;">
+
+      <p style="margin:0 0 0.75rem; font-style:italic; color:#555;">
+        Os parâmetros abaixo foram aplicados automaticamente pelo sistema e estão registrados
+        na Memória de Cálculo (.xlsx) para fins de auditoria e defesa do processo licitatório.
+      </p>
+
+      <div class="norma-secao" style="margin-bottom:0.85rem;">
+        <strong style="color:#1B3A6B;">1. ABERTURAS ENVIDRAÇADAS (PELÍCULA SOLAR)</strong>
+        <ul style="margin:0.25rem 0 0 1.2rem; padding:0;">
+          <li>Coeficiente de Sombreamento adotado: <strong>CS = 0,50</strong></li>
+          <li>Fator Solar adotado: <strong>FS = 0,44</strong></li>
+          <li>Referência: NBR 15220-1:2005, Tabela A.1</li>
+          <li>Base: vidro simples + película de controle solar de média eficiência</li>
+        </ul>
+      </div>
+
+      <div class="norma-secao" style="margin-bottom:0.85rem;">
+        <strong style="color:#1B3A6B;">2. COBERTURA</strong>
+        <ul style="margin:0.25rem 0 0 1.2rem; padding:0;">
+          <li>Transmitância térmica adotada: <strong>U = 1,50 W/m²·K</strong></li>
+          <li>Absortância solar adotada: <strong>α = 0,60</strong></li>
+          <li>Sistema: laje de concreto armado (esp. ≥ 10 cm) com telha de fibrocimento natural e câmara de ar ventilada</li>
+          <li>Referência: NBR 15220-1:2005, Tabela C.4 — Zona Bioclimática 8 (NBR 15220-3)</li>
+        </ul>
+      </div>
+
+      <div class="norma-secao" style="margin-bottom:0.85rem;">
+        <strong style="color:#1B3A6B;">3. RENOVAÇÃO DE AR / INFILTRAÇÃO</strong>
+        <ul style="margin:0.25rem 0 0 1.2rem; padding:0;">
+          <li>Taxa de infiltração adotada: <strong>0,5 renovações por hora (rph)</strong></li>
+          <li>Regime: infiltração por abertura eventual de portas (sem ventilação forçada)</li>
+          <li>Referência: NBR 16401-1:2008, item 5.3 — ambientes de ocupação intermediária</li>
+        </ul>
+      </div>
+
+      <div class="norma-secao" style="margin-bottom:0.85rem;">
+        <strong style="color:#1B3A6B;">4. TEMPERATURA DE PROJETO</strong>
+        <ul style="margin:0.25rem 0 0 1.2rem; padding:0;">
+          <li>Temperatura externa de projeto: <strong>36°C</strong> (verão, percentil 1% — Rio de Janeiro)</li>
+          <li>Temperatura interna de conforto: <strong>24°C</strong></li>
+          <li>Delta T adotado: <strong>ΔT = 12°C</strong></li>
+          <li>Referência: ASHRAE Handbook of Fundamentals / NBR 16401-1:2008</li>
+        </ul>
+      </div>
+
+      <p style="margin:0.75rem 0 0; padding:0.6rem 0.8rem; background:#fff8dc; border-left:3px solid #e6a800; border-radius:3px; font-size:0.8rem;">
+        <strong>Observação:</strong> Os parâmetros acima são válidos para os ambientes cujas premissas foram confirmadas no preenchimento.
+        Ambientes com divergências declaradas nas Observações serão recalculados individualmente pela BM/4.
+      </p>
+      <p style="margin:0.5rem 0 0; font-size:0.78rem; color:#777; font-style:italic;">
+        Metodologia: Método simplificado de carga térmica (CLTD/CLF) adaptado às premissas BM/4.
+        Documento gerado automaticamente pelo Sistema de Levantamento de Cargas Térmicas — CBMERJ/BM4.
+      </p>
+    </div>
+  </details>
+
+  <script>
+    /* Rotaciona seta do acordeão */
+    document.querySelector('.norma-acordeao')?.addEventListener('toggle', function () {
+      const seta = this.querySelector('.acordeao-seta');
+      if (seta) seta.textContent = this.open ? '▼' : '▶';
+    });
+  </script>
 </div>
 {% endblock %}
